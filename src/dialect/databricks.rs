@@ -15,9 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+use crate::ast::Expr;
 use crate::dialect::Dialect;
 use crate::keywords::Keyword;
-use crate::parser::Parser;
+use crate::parser::{Parser, ParserError};
 
 /// A [`Dialect`] for [Databricks SQL](https://www.databricks.com/)
 ///
@@ -69,6 +70,13 @@ impl Dialect for DatabricksDialect {
     }
 
     fn supports_numeric_prefix(&self) -> bool {
+        true
+    }
+
+    /// `1L` is a `BIGINT` literal.
+    ///
+    /// See <https://docs.databricks.com/aws/en/sql/language-manual/data-types/bigint-type>
+    fn supports_long_suffix_before_numeric_prefix(&self) -> bool {
         true
     }
 
@@ -160,5 +168,29 @@ impl Dialect for DatabricksDialect {
 
     fn supports_pipe_operator(&self) -> bool {
         true
+    }
+
+    /// See <https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using>
+    fn supports_create_table_using(&self) -> bool {
+        true
+    }
+
+    /// `LONG` is an alias for `BIGINT`.
+    ///
+    /// See <https://docs.databricks.com/aws/en/sql/language-manual/data-types/bigint-type>
+    fn supports_long_type_as_bigint(&self) -> bool {
+        true
+    }
+
+    /// Parse the `DIV` keyword as integer division.
+    ///
+    /// See <https://docs.databricks.com/aws/en/sql/language-manual/functions/div>
+    fn parse_infix(
+        &self,
+        parser: &mut Parser,
+        expr: &Expr,
+        precedence: u8,
+    ) -> Option<Result<Expr, ParserError>> {
+        super::parse_div_infix(parser, expr, precedence)
     }
 }

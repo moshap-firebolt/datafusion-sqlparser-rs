@@ -22,7 +22,7 @@
 
 use sqlparser::ast::{
     ClusteredBy, CommentDef, CreateFunction, CreateFunctionBody, CreateFunctionUsing, CreateTable,
-    Expr, Ident, ObjectName, OrderByExpr, OrderByOptions, OrderBySort, Set, Statement,
+    Expr, Ident, ObjectName, OrderByExpr, OrderByOptions, OrderBySort, SelectItem, Set, Statement,
     UnaryOperator, Use, Value,
 };
 use sqlparser::dialect::{AnsiDialect, GenericDialect, HiveDialect};
@@ -309,6 +309,14 @@ fn columns_after_partition() {
 fn long_numerics() {
     let query = r#"SELECT MIN(MIN(10, 5), 1L) AS a"#;
     hive().verified_stmt(query);
+    // `1L` is a BIGINT literal, not an identifier that starts with a digit.
+    assert_eq!(
+        hive().verified_only_select("SELECT 1L").projection,
+        vec![SelectItem::UnnamedExpr(Expr::value(Value::Number(
+            "1".parse().unwrap(),
+            true
+        )))]
+    );
 }
 
 #[test]
